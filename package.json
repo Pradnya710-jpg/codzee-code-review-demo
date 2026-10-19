@@ -1,0 +1,28 @@
+{
+  "name": "codzee-code-review-demo",
+  "version": "1.0.0",
+  "description": "A Node.js API project for evaluating AI code reviews",
+  "main": "index.js",
+  "scripts": {
+  "start": "node src/server.js",
+  "test": "jest --runInBand"
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pradnya710-jpg/codzee-code-review-demo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Pradnya710-jpg/codzee-code-review-demo/issues"
+  },
+  "homepage": "https://github.com/Pradnya710-jpg/codzee-code-review-demo#readme",
+  "dependencies": {
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "supertest": "^7.3.1"
+  }
+}
