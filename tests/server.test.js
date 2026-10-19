@@ -16,6 +16,45 @@ describe("POST /users", () => {
     expect(response.body.name).toBe("Pradnya");
     expect(response.body.email).toBe("pradnya@example.com");
   });
+  
+test("accepts a name with exactly 100 characters", async () => {
+  const response = await request(app)
+    .post("/users")
+    .send({
+      name: "A".repeat(100),
+      email: "boundary@example.com",
+    });
+
+  expect(response.status).toBe(201);
+  expect(response.body.name).toHaveLength(100);
+});
+
+test("accepts a padded name that trims to 100 characters", async () => {
+  const response = await request(app)
+    .post("/users")
+    .send({
+      name: ` ${"A".repeat(100)} `,
+      email: "padded@example.com",
+    });
+
+  expect(response.status).toBe(201);
+  expect(response.body.name).toHaveLength(100);
+});
+
+test("rejects request bodies larger than 10kb with JSON", async () => {
+  const response = await request(app)
+    .post("/users")
+    .set("Content-Type", "application/json")
+    .send(JSON.stringify({
+      name: "A".repeat(11000),
+      email: "test@example.com",
+    }));
+
+  expect(response.status).toBe(413);
+  expect(response.headers["content-type"]).toMatch(/application\/json/);
+  expect(response.body.error).toBe("Request body is too large");
+});
+
 
   test("rejects missing fields", async () => {
     const response = await request(app)
@@ -85,6 +124,31 @@ describe("GET /users", () => {
     expect(response.body.pagination.total).toBe(2);
     expect(response.body.pagination.totalPages).toBe(2);
   });
+  
+test("accepts the maximum page size of 100", async () => {
+  const response = await request(app).get("/users?limit=100");
+
+  expect(response.status).toBe(200);
+  expect(response.body.pagination.limit).toBe(100);
+});
+
+test.each(["101", "abc", "0"])(
+  "rejects invalid limit: %s",
+  async (limit) => {
+    const response = await request(app).get(`/users?limit=${limit}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  }
+);
+
+test("rejects fractional page numbers", async () => {
+  const response = await request(app).get("/users?page=1.5");
+
+  expect(response.status).toBe(400);
+  expect(response.body).toHaveProperty("error");
+});
+
 
   test("rejects invalid pagination parameters", async () => {
     const response = await request(app).get("/users?page=0&limit=10");
