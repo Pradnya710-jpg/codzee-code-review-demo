@@ -175,3 +175,104 @@ test("rejects fractional page numbers", async () => {
     expect(response.status).toBe(400);
   });
 });
+describe("PUT /users/:id", () => {
+  beforeEach(() => {
+    app.locals.users.length = 0;
+  });
+
+  const createUser = async (name, email) => {
+    return request(app).post("/users").send({ name, email });
+  };
+
+  test("updates a user's name and email successfully", async () => {
+    await createUser("Pradnya", "old@example.com");
+
+    const response = await request(app)
+      .put("/users/1")
+      .send({ name: "Updated Name", email: "NEW@example.com" });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      id: 1,
+      name: "Updated Name",
+      email: "new@example.com",
+    });
+  });
+
+  test("returns 404 when the user does not exist", async () => {
+    const response = await request(app)
+      .put("/users/999")
+      .send({ name: "Test", email: "test@example.com" });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe("User not found");
+  });
+
+  test("returns 400 for an invalid user ID", async () => {
+    const response = await request(app)
+      .put("/users/abc")
+      .send({ name: "Test", email: "test@example.com" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Invalid user ID");
+  });
+
+  test("returns 400 when required fields are missing", async () => {
+    await createUser("Pradnya", "old@example.com");
+
+    const response = await request(app)
+      .put("/users/1")
+      .send({ name: "Updated Name" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Name and email are required");
+  });
+
+  test("returns 400 for an invalid email", async () => {
+    await createUser("Pradnya", "old@example.com");
+
+    const response = await request(app)
+      .put("/users/1")
+      .send({ name: "Updated Name", email: "invalid-email" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("A valid email address is required");
+  });
+
+  test("returns 400 when the name exceeds 100 characters", async () => {
+    await createUser("Pradnya", "old@example.com");
+
+    const response = await request(app)
+      .put("/users/1")
+      .send({ name: "A".repeat(101), email: "new@example.com" });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe(
+      "Name must be between 1 and 100 characters"
+    );
+  });
+
+  test("returns 409 when the email belongs to another user", async () => {
+    await createUser("User One", "one@example.com");
+    await createUser("User Two", "two@example.com");
+
+    const response = await request(app)
+      .put("/users/1")
+      .send({ name: "User One", email: "two@example.com" });
+
+    expect(response.status).toBe(409);
+    expect(response.body.error).toBe("Email already exists");
+  });
+
+  test("allows keeping the same email when updating the name", async () => {
+    await createUser("Pradnya", "pradnya@example.com");
+
+    const response = await request(app)
+      .put("/users/1")
+      .send({ name: "Updated Name", email: "pradnya@example.com" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.name).toBe("Updated Name");
+    expect(response.body.email).toBe("pradnya@example.com");
+  });
+});
