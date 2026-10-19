@@ -90,9 +90,7 @@ app.get("/users", (req, res) => {
   });
 });
 app.use((err, req, res, next) => {
-  if (res.headersSent) {
-    return next(err);
-  }
+  if (res.headersSent) return next(err);
 
   if (err.type === "entity.parse.failed") {
     return res.status(400).json({
@@ -106,8 +104,14 @@ app.use((err, req, res, next) => {
     });
   }
 
-  console.error(err);
+  // Handle other 4xx errors after specific checks
+  if (err.status >= 400 && err.status < 500) {
+    return res.status(err.status).json({
+      error: "Invalid request",
+    });
+  }
 
+  console.error(err);
   return res.status(500).json({
     error: "Internal server error",
   });

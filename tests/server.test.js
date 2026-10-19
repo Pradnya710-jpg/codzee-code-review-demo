@@ -40,7 +40,26 @@ test("accepts a padded name that trims to 100 characters", async () => {
   expect(response.status).toBe(201);
   expect(response.body.name).toHaveLength(100);
 });
+test("trims email whitespace and detects duplicates", async () => {
+  const first = await request(app)
+    .post("/users")
+    .send({
+      name: "First",
+      email: " test@example.com ",
+    });
 
+  expect(first.status).toBe(201);
+  expect(first.body.email).toBe("test@example.com");
+
+  const second = await request(app)
+    .post("/users")
+    .send({
+      name: "Second",
+      email: "test@example.com",
+    });
+
+  expect(second.status).toBe(409);
+});
 test("rejects request bodies larger than 10kb with JSON", async () => {
   const response = await request(app)
     .post("/users")
