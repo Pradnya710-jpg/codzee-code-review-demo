@@ -57,6 +57,7 @@ app.post("/users", (req, res, next) => {
 });
 
 
+
 app.get("/users", (req, res) => {
   const page = Number(req.query.page ?? 1);
   const limit = Number(req.query.limit ?? 10);
@@ -73,9 +74,26 @@ app.get("/users", (req, res) => {
     });
   }
 
+  let filteredUsers = users;
+
+  if (req.query.name !== undefined) {
+    if (typeof req.query.name !== "string" || !req.query.name.trim()) {
+      return res.status(400).json({
+        error: "Name filter must be a non-empty string",
+      });
+    }
+
+    const searchName = req.query.name.trim().toLowerCase();
+
+    filteredUsers = users.filter((user) =>
+      user.name.toLowerCase().includes(searchName)
+    );
+  }
+
+  const total = filteredUsers.length;
   const startIndex = (page - 1) * limit;
 
-  const data = users
+  const data = filteredUsers
     .slice(startIndex, startIndex + limit)
     .map(({ id, name }) => ({ id, name }));
 
@@ -84,11 +102,12 @@ app.get("/users", (req, res) => {
     pagination: {
       page,
       limit,
-      total: users.length,
-      totalPages: Math.ceil(users.length / limit),
+      total,
+      totalPages: Math.ceil(total / limit),
     },
   });
 });
+
 app.put("/users/:id", (req, res) => {
   const id = Number(req.params.id);
 
