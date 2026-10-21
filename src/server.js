@@ -89,6 +89,51 @@ app.get("/users", (req, res) => {
     },
   });
 });
+app.put("/users/:id", (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ error: "Invalid user ID" });
+  }
+
+  const user = users.find((item) => item.id === id);
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  const { name, email } = req.body || {};
+
+  if (typeof name !== "string" || typeof email !== "string") {
+    return res.status(400).json({ error: "Name and email are required" });
+  }
+
+  const normalizedName = name.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedName || normalizedName.length > 100) {
+    return res.status(400).json({
+      error: "Name must be between 1 and 100 characters",
+    });
+  }
+
+  if (normalizedEmail.length > 254 || !EMAIL_REGEX.test(normalizedEmail)) {
+    return res.status(400).json({ error: "A valid email address is required" });
+  }
+
+  const duplicate = users.find(
+    (item) => item.id !== id && item.email === normalizedEmail
+  );
+
+  if (duplicate) {
+    return res.status(409).json({ error: "Email already exists" });
+  }
+
+  user.name = normalizedName;
+  user.email = normalizedEmail;
+
+  return res.json(user);
+});
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
 
